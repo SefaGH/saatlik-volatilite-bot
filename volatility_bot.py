@@ -5,7 +5,7 @@ import os, time, math, requests, numpy as np
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 MODE = os.environ.get("MODE", "coingecko").lower()
-TOP_N = int(os.environ.get("TOP_N", "10"))
+TOP_N = int(os.environ.get("TOP_N") or "10")
 MIN_VOLUME_USD = float(os.environ.get("MIN_VOLUME_USD", "1000000"))
 MIN_QUOTE_VOL_USDT = float(os.environ.get("MIN_QUOTE_VOL_USDT", "5000000"))
 
