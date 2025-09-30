@@ -20,7 +20,3 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          MODE: ${{ secrets.MODE }}
-          TOP_N: ${{ secrets.TOP_N }}
-          MIN_VOLUME_USD: ${{ secrets.MIN_VOLUME_USD }}
-          MIN_QUOTE_VOL_USDT: ${{ secrets.MIN_QUOTE_VOL_USDT }}
