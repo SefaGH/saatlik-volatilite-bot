@@ -1,0 +1,64 @@
+name: Market Overview Notifier
+
+on:
+  schedule:
+    - cron: '30 * * * *'   # every hour at minute 30 (UTC)
+  workflow_dispatch: {}
+
+jobs:
+  run-overview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run Market Overview only
+        run: |
+          python - <<'EOF'
+          import os, requests, time
+          TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
+          TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
+
+          def send(msg):
+              url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+              requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": msg, "parse_mode": "HTML"})
+
+          # fetch markets
+          total = up = down = 0
+          btc_change = None
+          for page in [1,2,3,4]:
+              url = ("https://api.coingecko.com/api/v3/coins/markets"
+                     "?vs_currency=usd&order=market_cap_desc&per_page=250"
+                     f"&page={page}&sparkline=false&price_change_percentage=1h")
+              data = requests.get(url, timeout=60).json()
+              for c in data:
+                  pc1h = c.get("price_change_percentage_1h_in_currency")
+                  if pc1h is None: continue
+                  total += 1
+                  if pc1h > 0: up += 1
+                  elif pc1h < 0: down += 1
+                  if btc_change is None and (c.get("symbol")=="btc" or c.get("name")=="Bitcoin"):
+                      btc_change = pc1h
+              time.sleep(0.6)
+
+          if total == 0:
+              send("📊 Market Overview:\n⚠️ Not enough data.")
+          else:
+              breadth = (up/total)*100
+              if breadth >= 60: trend = "BULLISH ✅"
+              elif breadth <= 40: trend = "BEARISH ❌"
+              else: trend = "NEUTRAL ⏸️"
+              btc_line = f"{btc_change:+.2f}%" if btc_change is not None else "n/a"
+              msg = (f"📊 <b>Market Overview (1h)</b>\n"
+                     f"- Breadth: {breadth:.0f}% advancing ({up}/{total})\n"
+                     f"- BTC (1h): {btc_line}\n"
+                     f"- Trend: {trend}")
+              send(msg)
+          EOF
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
